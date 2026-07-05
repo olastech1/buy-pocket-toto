@@ -644,26 +644,26 @@
             <form id="checkout-form" onsubmit="submitOrder(event)" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-zinc-300 mb-1.5">Full Name</label>
-                    <input type="text" required class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="John Doe">
+                    <input type="text" id="order-name" required class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="John Doe">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-zinc-300 mb-1.5">Phone Number</label>
-                    <input type="tel" required class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="0801 234 5678">
+                    <input type="tel" id="order-phone" required class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="0801 234 5678">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email Address</label>
-                    <input type="email" required class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="you@example.com">
+                    <input type="email" id="order-email" required class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="you@example.com">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-zinc-300 mb-1.5">Full Delivery Address</label>
-                    <textarea required rows="3" class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="123 Example Street, Lagos"></textarea>
+                    <textarea id="order-address" required rows="3" class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder-zinc-500 focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500" placeholder="123 Example Street, Lagos"></textarea>
                 </div>
 
                 <div class="pt-4 border-t border-zinc-700">
-                    <button type="submit" class="w-full rounded-3xl bg-rose-600 py-4 text-lg font-extrabold text-white active:bg-rose-700 transition-colors">
+                    <button type="submit" id="submit-button" class="w-full rounded-3xl bg-rose-600 py-4 text-lg font-extrabold text-white active:bg-rose-700 transition-colors">
                         CONFIRM ORDER
                     </button>
                     <button type="button" onclick="hideCheckoutForm(); showCart()" class="mt-3 w-full py-2 text-sm text-zinc-400 hover:text-white">Back to Cart</button>
@@ -830,19 +830,57 @@
 
         function submitOrder(e) {
             e.preventDefault();
-            hideCheckoutForm();
             
-            // Show processing/success
-            const success = document.getElementById('success-modal');
-            success.style.display = 'flex';
-            
-            // Update success text
-            document.getElementById('success-subtitle').textContent = "Order Confirmed! We will call you shortly to verify your delivery address before dispatching. Payment will be collected on delivery.";
-            
-            // Reset cart and form
-            cartCount = 0;
-            updateCartCount();
-            e.target.reset();
+            const btn = document.getElementById('submit-button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> PROCESSING...';
+            btn.disabled = true;
+
+            const name = document.getElementById('order-name').value;
+            const phone = document.getElementById('order-phone').value;
+            const email = document.getElementById('order-email').value;
+            const address = document.getElementById('order-address').value;
+            const total = (26000 * cartCount).toLocaleString('en-NG');
+            const qty = cartCount;
+
+            const url = "https://script.google.com/macros/s/AKfycbxqDZkKg1JxcOsM4Y6v9apQhCmrixdQgpKK8NOKnaYhVPJd3uIh4VA5itxi6IoQdUSVzw/exec";
+
+            const formData = new URLSearchParams();
+            formData.append('name', name);
+            formData.append('phone', phone);
+            formData.append('email', email);
+            formData.append('address', address);
+            formData.append('qty', qty);
+            formData.append('total', "₦" + total);
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                hideCheckoutForm();
+                
+                // Show processing/success
+                const success = document.getElementById('success-modal');
+                success.style.display = 'flex';
+                
+                // Update success text
+                document.getElementById('success-subtitle').textContent = "Order Confirmed! We will call you shortly to verify your delivery address before dispatching. Payment will be collected on delivery.";
+                
+                // Reset cart and form
+                cartCount = 0;
+                updateCartCount();
+                e.target.reset();
+                
+                // Reset button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            })
+            .catch(error => {
+                alert("There was an error submitting your order. Please check your internet connection and try again.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
         }
         
         function hideSuccess() {
